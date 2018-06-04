@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+
+	<security:global-method-security pre-post-annotations="enabled"/>	
+
+
+	<security:http use-expressions="true">
+
+	
+	 <security:intercept-url pattern="/admin/**" access="hasRole('ROLE_ADMIN')"/>   	
+	   <security:intercept-url pattern="/auction/**" access="hasAnyRole('ROLE_USER','ROLE_ADMIN')"/> 
+	     <security:intercept-url pattern="/property/**" access="hasAnyRole('ROLE_USER','ROLE_ADMIN')"/> 
+	      <security:intercept-url pattern="/home/**" access="hasAnyRole('ROLE_ADMIN','ROLE_USER')"/> 
+	      
+	      
+	  <!--  <security:intercept-url pattern="/members/add" access="hasRole('ROLE_ADMIN')"/>  	
+	  <security:intercept-url pattern="/members" access="hasAnyRole('ROLE_ADMIN','ROLE_USER')"  /> -->
+	 
+<!-- Switch to HTTPS -->
+ <!-- 	  <security:intercept-url pattern="/login" access="isAnonymous()" requires-channel="https"/>
+ 	  <security:intercept-url pattern="/logout" access="isAuthenticated()" requires-channel="http"/>
+ --> 	
+ 	<!-- BASIC login -->
+ <!-- 	 		<security:form-login />   -->
+ 	
+		<!-- always-use-default-target overrides where login was triggered routes to default-target-url -->
+		<!-- NOTE: PRE-Version 4 there were j_* values for all the secruity resources:
+				j_security_login, j_username, j_password etc. 
+		            Version 4 got rid of all of them -->
+  <!-- comment out the next few lines for BASIC Login -->
+  		<security:form-login 
+ 		 login-page="/login" 
+ 		 login-processing-url="/postLogin"
+ 		 username-parameter="username" 
+				password-parameter="password"
+			    default-target-url="/home"    
+               always-use-default-target="true"   
+               authentication-failure-url="/loginError"/>
+ <!-- END of comment out  for BASIC Login -->
+ 
+    
+         <security:logout logout-success-url="/logout" 
+         
+          delete-cookies="JSESSIONID" logout-url= "/doLogout"/>    
+       
+ 		   <!-- enable remember me -->
+ 	<security:remember-me data-source-ref="dataSource" 
+	             token-validity-seconds="86400" remember-me-parameter="keepMe"/>
+	
+<!-- Version 4.0 + enables CSRF so if we want to disable-->
+<security:csrf disabled="true"/>
+ 	</security:http>
+ 
+	
+ <!-- Database security "custom queries are because we have used our own schema...	-->
+	<security:authentication-manager alias="authenticationManager">
+		<security:authentication-provider>
+			 <security:password-encoder ref="passwordEncoder" /> 
+			<security:jdbc-user-service
+				data-source-ref="dataSource"
+				 users-by-username-query="select username,password,enable from credential where username=?"
+				authorities-by-username-query="select u1.username, u2.authority from credential u1, authority u2 
+				                                                     where u1.username = u2.username and u1.username =?" />
+				
+				
+				
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+	<bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" >
+	</bean>
+ </beans>
